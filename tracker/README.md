@@ -1,73 +1,45 @@
-# React + TypeScript + Vite
+# 🚀 Fully Customizable Persona Tracker
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A premium, state-of-the-art tracker designed for high-achievers. Originally built for a 38-day hustle to ₹1,00,000, it is now **fully editable and multi-user ready**.
 
-Currently, two official plugins are available:
+## ✨ Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **🔐 Personal Authentication**: Create your own account to save your progress. Data is isolated per user using local storage.
+- **⚙️ Fully Editable Plan**:
+  - Set your own **Goal Amount** (Revenue/Points/Units).
+  - Define your **Total Days** (from a 1-day sprint to a 365-day marathon).
+  - Pick your **Start Date**.
+- **📊 Dynamic Analytics**:
+  - Real-time **Revenue vs Target** chart.
+  - Interactive **Reels Pipeline** and **KPIs**.
+  - Habit and Task completion tracking.
+- **📅 Daily Work Board**: Manage tasks across four daily segments: Morning, Afternoon, Evening, and Before Bed.
+- **🎬 Content Pipeline**: Plan and track your content (Reels/Shorts) from script to posting.
 
-## React Compiler
+## 🛠️ Built With
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React + TypeScript + Vite**
+- **Recharts** (Data Visualization)
+- **Lucide React** (Premium Iconset)
+- **Vanilla CSS** (Custom Design System)
 
-## Expanding the ESLint configuration
+## 🚀 Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. **Clone and Install**:
+   ```bash
+   npm install
+   ```
+2. **Run Locally**:
+   ```bash
+   npm run dev
+   ```
+3. **Sign Up**: Create an account to start your journey.
+4. **Customize**: Click the ⚙️ icon in the header to set your specific goals and timeline.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🎨 Design Philosophy
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+The app uses a curated HSL color palette and modern typography (DM Serif Display & DM Sans) to provide a premium "Glassmorphism" feel while remaining highly functional and responsive.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+*Made with ❤️ for Hustlers.*

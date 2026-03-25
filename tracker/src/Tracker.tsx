@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip,
     ResponsiveContainer, CartesianGrid, Cell,
 } from 'recharts';
-import { Plus, X, Trash2, TrendingUp, ChevronDown, ChevronUp, Edit2 } from 'lucide-react';
-import { ALL_DAILY_TASKS } from './dailyTasksData';
+import { Plus, X, Trash2, TrendingUp, ChevronDown, ChevronUp, LogOut, Settings, Edit2 } from 'lucide-react';
+import { getPlaceholderTasks } from './dailyTasksData';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ReelStatus = 'pending' | 'recording' | 'typography' | 'posted';
@@ -19,20 +19,22 @@ interface TrackerData {
     freelanceIncomes: FreelanceIncome[];
     quickRevertFeatures: QuickRevertFeature[];
     habits: Habit[];
+    goalAmount: number;
+    startDate: string;
+    totalDays: number;
 }
 
-const GOAL_AMOUNT = 100000;
-const START_DATE = new Date('2026-03-23');
-const TOTAL_DAYS = 38;
-const DAILY_TARGET = Math.ceil(GOAL_AMOUNT / TOTAL_DAYS);
+const DEFAULT_GOAL = 100000;
+const DEFAULT_START_DATE = new Date().toISOString().split('T')[0];
+const DEFAULT_TOTAL_DAYS = 40;
 
 // ─── Default Content ──────────────────────────────────────────────────────────
 const DEFAULT_QR_FEATURES: QuickRevertFeature[] = [
-    { id: 'qr1', name: 'Conversational Flows', icon: '🤖', completed: false, notes: '' },
-    { id: 'qr2', name: 'Retrigger Messages', icon: '🔁', completed: false, notes: '' },
-    { id: 'qr3', name: 'Lead Manager', icon: '📂', completed: false, notes: '' },
-    { id: 'qr4', name: 'Live Automation', icon: '⚡', completed: false, notes: '' },
-    { id: 'qr5', name: 'Carousel Cards', icon: '🎴', completed: false, notes: '' },
+    { id: 'qr1', name: 'Project - feature 1', icon: '🚀', completed: false, notes: '' },
+    { id: 'qr2', name: 'Project - feature 2', icon: '✨', completed: false, notes: '' },
+    { id: 'qr3', name: 'Project - feature 3', icon: '📂', completed: false, notes: '' },
+    { id: 'qr4', name: 'Project - feature 4', icon: '⚡', completed: false, notes: '' },
+    { id: 'qr5', name: 'Project - feature 5', icon: '🎴', completed: false, notes: '' },
 ];
 
 const DEFAULT_HABITS: Habit[] = [
@@ -46,104 +48,23 @@ const DEFAULT_HABITS: Habit[] = [
     { id: 'h8', name: '📋 Plan tomorrow', completed: false },
 ];
 
-const DEFAULT_REELS: Reel[] = [
-    {
-        id: 'reel1', title: 'Reel 1 — 47 Tabs Open', status: 'pending',
-        script: `everyone on instagram had a thing.\nand i had… anxiety and 47 tabs open.\n\nthe fitness girl. the fashion girl. the "day in my life" girl.\nand i'm sitting there like okay but what is MY thing.\nnot aesthetic enough for lifestyle.\nnot consistent enough for fitness.\nnot put together enough for anything honestly.\ndownloaded capcut.\nstared at a blank screen for 40 minutes.\nclosed capcut. opened instagram.\nwatched more reels. felt more behind.\nclassic.\nbut then i thought — wait.\ni actually have a story. My story. a really unhinged one.\nso hi i'm khushi.\nand in this series, I'll be sharing the most chaotic thing i've ever done.\nAnd how I am planning to start my start up.`,
-    },
-    {
-        id: 'reel2', title: 'Reel 2 — 8 Pointer Felt Nothing', status: 'pending',
-        script: `got a 8 pointer and felt nothing.\nand that scared me more than failing ever did.\n\ngrades? immaculate.\nparents? proud.\nrelatives screenshotting my marksheet.\nsending it in the family group like i was a national achievement.\nand i'm sitting there like cool. now what. Ab kya karna hai.\nif they were never your goals to begin with.\ni was winning a game I never signed up to play.\nand the scariest part?\nI had zero idea what game i actually wanted.\nFir 1 day, I came across an idea. And I was somehow convinced I might be able to pull it off.\nAao agli reel me btati hu, what happened then.`,
-    },
-    {
-        id: 'reel3', title: 'Reel 3 — Waiting at the Restaurant', status: 'pending',
-        script: `I am Khushi, I just completed engineering and this is my story.\nYou know when you're at a restaurant\nand the waiter keeps bringing food to every table around you.\nand you're just sitting there. waiting.\nwondering if they forgot you.\nthat was my entire existence at 20.\n\nInstagram pe beauty products dikhane wali friend was making money in her sleep.\ngirl from class placed at a package I couldn't even tell my dad.\nCousin freelancing from Thailand. THAILAND.\nand me?\nI was on linkedin at 1 am.\nreading "10 skills to get hired in 2026."\nfor the fifth time.\nIT NEVER SAYS ANYTHING DIFFERENT.\nI had SKILL. I had my laptop. I had wifi. And still I was so lost I didn't even know I was lost.\nYou ever felt the same? Pl tell me in comment I am not alone.\nAage milte hai... will continue my story.. see you guys!`,
-    },
-    {
-        id: 'reel4', title: 'Reel 4 — 45 Companies Resume', status: 'pending',
-        script: `You guys have been DMing me ki are you still jobless. "Ruko zara, sabr kro"\nYou know what being jobless feel like if you have done this.\nI sent my resume to 45 companies in one night.\nand somehow that's not even the embarrassing part.\n\nno filter. no strategy. no research.\njust send. send. send. woke up next morning.\n3 replies. one automated. one rejection.\nbut 1 person actually wanted to talk.\nAnd you know what I did… i left them on "read".\nbecause my brain said "bro you're not ready."\nwhat if they find out. F*** man, find out WHAT.\nscared of being exposed\nFailure acceptance era: fully activated.\n\nIdea jitna bhi acha ho, Indian middle parents will convince you ki Job will get me financial stability.\nMujhe b same lag ra tha.\n\nWith 10 open linkedin open tabs sath me, I replied to one read message. He was a senior from a company in bangalore who reached out to me after looking at my resume.\n& This was the beginning of Quickrevert.\nFollow kr lo. story continue krti hu fir..`,
-    },
-    {
-        id: 'reel5', title: 'Reel 5 — Imposter Syndrome', status: 'pending',
-        script: `Remember in last reel I told about a guy who reached out to me on linkedin.\nHe saw my profile and liked the fact AI engineering India me chalu ho gyi hai and I m doing that too..\nBut you know what.\nimposter syndrome doesn't announce itself.\nno villain music. no warning sign.\nclosing tabs because reading them makes you feel dumb. blanking on something you studied for 4 years.\nI guess all of us in tech has felt this. none of us talk about it enough.\nKhair, we talked and he said he is looking for someone who can do a small task of AI automation and can pay for the task.\nAb the task he said he can give 15,000 and 5-6 days of work. And I am like not bad. I am in my last semester of the college and I was getting money that can buy me my next phone. Felt cool. I said yes.\nBhai most of people don't know – I am sure he also dint know. AI can do most of things in 1/10th of the actual time.\nAnd I have lot of AI tools which I used to use in college projects. Comments me tools likhoge toh bhej bhi dungi.\nBut then what happened after that just blew my mind.\nFollow me, as I continue the story.`,
-    },
-    {
-        id: 'reel6', title: 'Reel 6 — The DM That Changed Everything', status: 'pending',
-        script: `Hi I am Khushi, and this is my story in which I took charge of my career – part 6\nIf you are watching this reel directly, I would recommend – see the series from starting – you will enjoy more…\nSo I was saying.\nBhai.. Minor accuracy issues because AI did it – but I edited it to perfection. He was mind blown as I did in less than half the time I got. He paid me as promised.\n\nFrom a nothing Tuesday where I open linkedin. feel behind. close. reopen. feel worse.\nTurned into a wow! Because-\nHe sent me a DM.\n"Hey, I think you'd be perfect for this idea I have."\nfirst thought? scam.\nsecond thought? definitely scam.\nthird thought? I'm so bored tho.\nSo, I replied.\nHe pitched me an idea and said we can do this together and said I think this will sell good and there will be a good demand. We can learn together as we go ahead and do it as partners.\nHonestly I felt like a scam.\nbut he said WE specifically.\nnot hiring. not apply here. WE.\nand something just unlocked in my brain. I said yes before my brain could say no.\nIt's been 6 months now that I have been working on it and I still cant believe that "yes" will be start to me co-building QuickRevert.\nSee you in the next part of the story! Stay tuned`,
-    },
-    {
-        id: 'reel7', title: 'Reel 7 — Working on Something', status: 'pending',
-        script: `Hi I am Khushi, and this is my story in which I took charge of my career – part 7\n"working on something" was my answer for 6 months straight.\nwhat something? just. something.\nmy parents asked every week.\nwhat something? "just something."\nis it going well? "yeah it's going."\nare you making money? "…No… it's a process."\nBro i had NOTHING. just a girl with a laptop\nand apparently a person I met on linkedin who showed me what can be done.\nand an idea we were convinced could be something.\nwe were building a Meta approved instagram automation tool.\nsomething that could save creators hours every single day.\ndid we know how to build it? partially.\ndid we care enough to stop? absolutely not.\ncomment anything on this reel and i'll dm you the one page doc that helped me explain my idea to literally anyone.`,
-    },
-    {
-        id: 'reel8', title: 'Reel 8 — Code Had Beef With Me', status: 'pending',
-        script: `Hi I am Khushi, and this is my story in which I took charge of my career – part 8\n1 small hope – han aaj se socha I should name the chapters of my story. Aaj ka naam hai – 1 small hope.\n\nme: i'm going to build a startup.\nthe code: lol okay.\n\nnothing worked. like nothing.\nevery single thing broke in a new and creative way. errors that felt personal honestly.\nlike the code had beef with me specifically.\nfix one thing. three new things break.\nFIX ONE. THREE BREAK.\nevery single day for weeks.\nand my cofounder and i just sitting there like -\nbro. BRO. aaj kya fata hai.\nwe're building something real here.\nfor actual people.\nand it keeps breaking.\nbut we kept going.\nbecause we were too stubborn to let code win.\nego is a powerful motivator honestly.\nThen came the day – ooohhh bhaaisaaaabbb it worked fine under testing conditions.\nLot still needed to be done, but it gave us 1 small hope – that we were on the right path.\nThat day we decided, now come whatsoever – is code ka baap bhi kaam Karega.\nWe also onboarded one more guy in the core team. He had experience in tech sales.\nAage kya hua? follow me on my journey, aage btati hu.`,
-    },
-    {
-        id: 'reel9', title: 'Reel 9 — Laptop Crash Part 1', status: 'pending',
-        script: `Hi I am Khushi, and this is my story in which I took charge of my career – part 9\nKismat me likhi hai dhool, aur tum dhund rahe ho phool – yeh hai aaj ki story ka title.\n\nAur Yehi exactly hua uske baad.\nOne night - My laptop just died.\nno warning. no goodbye.\nblack screen.\njust —\ngone.\n\nAlmost 1 month of work. Baaki kaam github pe pushed tha, but not the last 20-25 days of updates.\nevery file. every note. every line of code.\ncorrupted.\nunrecoverable.\nGONE.\n\ni sat there staring at the screen\nfor an embarrassing amount of time\ngenuinely hoping it would change its mind.\n\nit didn't.\n\nI called my cofounder. didn't even say anything for like 10 seconds.\nhe already knew from the silence. And 3rd guy was still trying to figure out hua kya hai.\n\nthis was not in the plan.\nthere was no plan for this.\nthere is no plan for this.`,
-    },
-    {
-        id: 'reel10', title: 'Reel 10 — Crash Part 2 / Rebuild', status: 'pending',
-        script: `so what do you do when you lose everything.\n\napparently you just.\nstart again.\n\nnew laptop. blank screen.\nsame idea. same cofounder.\nzero files.\n\nand you know what was the most unhinged part?\nstarting again was faster.\nbecause we knew what we were building now.\nthe first time we were figuring it out.\nthe second time we were just rebuilding it.\nthere's a difference.\nlosing everything taught us\nwe actually knew more than we thought.\nyou don't know what you know\nuntil you have to prove it from scratch.\nthe crash was the worst thing that happened to us.\nand accidentally one of the best.\ncomment "scratch" and i'll dm you exactly how we rebuilt in half the time.`,
-    },
-    {
-        id: 'reel11', title: 'Reel 11 — Loneliness of Building', status: 'pending',
-        script: `the loneliest part of building something\nis that nobody around you speaks the language yet.\n\nnobody in my circle got it.\nfriends prepping for placements.\nfamily asking about internships.\nand i'm here rebuilding a startup from scratch\nafter losing everything.\nexplaining it felt exhausting.\nso i stopped explaining.\n"working on a project" and change subject. every time.\nand that loneliness —\nof being in a room full of people\nand operating in a completely different dimension —\nthat part nobody posts about.\nthat part was really hard.\nbut it also meant something was real.\nbecause if it was easy to explain\nit probably wasn't that interesting.\ncomment "alone" and i'll dm you the communities that actually helped me find my people.`,
-    },
-    {
-        id: 'reel12', title: 'Reel 12 — Almost Quit on a Wednesday', status: 'pending',
-        script: `i almost quit on a wednesday.\na completely normal nothing wednesday.\n\nno dramatic moment. no fight. no failure.\njust a wednesday afternoon.\neverything felt stuck.\nopened my laptop and just sat there for 40 minutes.\nnot working. not thinking. just sitting.\nand i thought —\ni could just stop.\ngo back to the normal path.\nplacements. job. salary. fine.\nnobody would even know i tried.\ni didn't close the laptop.\ndon't know why.\nstubbornness maybe.\nego probably.\nbut i didn't close it.\nand that wednesday became the week everything started clicking.\nthe almost quit was one day before the breakthrough.\ntiming is actually so cruel.\ncomment "wednesday" and i'll dm you the journaling prompts i used on my worst days.`,
-    },
-    {
-        id: 'reel13', title: 'Reel 13 — First Win / It Worked', status: 'pending',
-        script: `when something you built works for the first time\nyou become a completely different person on the spot.\n\nchecked it three times because i didn't trust it.\nrefreshed. still working.\nrefreshed again. STILL WORKING.\ntexted my cofounder at 11:47pm.\nall caps. no punctuation.\nhe called immediately.\nwe talked for 20 minutes\nabout something that took 3 weeks to build\nand 4 minutes to explain.\nno placement would've given me this feeling.\nonly this.\nonly building something from nothing\nand watching it actually work.\nthis is the feeling i was chasing\nwhen i was sitting at that restaurant\nwaiting for my order.\nturns out i had to cook it myself.\ncomment "cooked" and i'll dm you the exact stack we used to build our first working version.`,
-    },
-    {
-        id: 'reel14', title: 'Reel 14 — No Backup Plan', status: 'pending',
-        script: `my best friend asked "what's your backup plan"\nand i realized i didn't want one.\nand that was the scariest thing i'd ever felt.\n\nBACKUP PLAN.\ni had just told her i was building a startup\nand she immediately went to exit strategy\nbefore i even had an entry strategy.\ni had no answer.\nno backup. no plan A even.\njust vibes and a github account.\nand then i realized —\ni don't want one.\nbecause the second i make a backup plan\nthis becomes optional.\nand i needed this to not be optional.\nclosed that conversation.\nopened my laptop.\nkept building.\nzero backup plan. zero chill. full send.\ncomment "backup" and i'll dm you the clarity doc i made when everything felt uncertain.`,
-    },
-    {
-        id: 'reel15', title: 'Reel 15 — Forgot Things I Used to Know', status: 'pending',
-        script: `i forgot things i used to know.\nand that was scarier than not knowing them at all.\n\nAI. ML. concepts i could explain in my sleep.\njust… gone.\nso deep in building\nthe old stuff quietly packed up and left.\none day someone asked me something in my own field.\nand i stumbled. STUMBLED.\non my own subject.\nnot "am i good enough."\n"wait was i ever."\ni know now it's a trade off not a failure.\nyou can't hold everything.\nbut at 20 at 2am?\nit just felt like loss.\nkept building anyway.\nbecause the thing we were making\nwas starting to feel too real to abandon.\ncomment "trade" and i'll dm you the skill tracker i use to make sure i'm not falling behind.`,
-    },
-    {
-        id: 'reel16', title: 'Reel 16 — Pivoting / Calibration', status: 'pending',
-        script: `i changed directions so many times\nmy cofounder stopped asking why\nand just started saying "okay what now."\n\nevery week slightly different. every month new direction.\nlike bro pick a lane. PICK A LANE.\nbut here's what i know now.\nthe changing wasn't confusion.\nit was calibration.\nevery pivot was data.\nevery direction change was information.\nand slowly the product became clearer.\nwhat we were building. who it was for. why it mattered.\ni wasn't lost.\ni was running experiments with my entire life.\nvery smart or very unhinged.\ndefinitely both.\ncomment "pivot" and i'll dm you the framework i used to finally figure out what i was building.`,
-    },
-    {
-        id: 'reel17', title: 'Reel 17 — Found My People at 2am', status: 'pending',
-        script: `found my people at 2am.\nthat's the whole cofounder criteria honestly.\n\npeople awake at the same insane hours.\nbuilding at the same chaotic pace.\nequally lost. equally driven.\nsuddenly the 2am wasn't just mine.\nsomeone else losing their mind with me.\ncelebrating when something worked.\nspiraling when it didn't.\nwe were three people.\none product.\none shared delusion that this was going to work.\nand somehow that was enough.\nfinding your cofounder isn't a business decision.\nit's a survival decision.\nchoose someone who replies at 2am.\nthat's literally the whole criteria.\ncomment "2am" and i'll dm you exactly how i found my people when i was building from scratch.`,
-    },
-    {
-        id: 'reel18', title: 'Reel 18 — Imposter Gets Quieter', status: 'pending',
-        script: `still don't have it figured out.\nand i've made peace with that. mostly.\n\ni'm 21. building something real.\nwith real people. toward a real deadline.\nand i still have days where i think —\nam i doing this right.\nthe imposter doesn't fully leave.\nshe just gets quieter.\nused to shout. now she mutters.\nprogress i guess.\nwhat changed isn't that i stopped doubting.\nit's that i stopped letting the doubt make the decisions.\ndoubt can sit in the passenger seat.\nshe's just not allowed to drive anymore.\ntook embarrassingly long to figure that out.\ncomment "doubt" and i'll dm you the weekly check in template i use to stay sane while building.`,
-    },
-    {
-        id: 'reel19', title: 'Reel 19 — What Building Actually Costs', status: 'pending',
-        script: `nobody posts about what building actually costs.\nso i will.\n\nthe missed plans.\nthe "sorry i can't i'm working on something."\nthe friendships that quietly drifted\nbecause you were always half present.\nphysically there. mentally in the codebase.\nbuilding something costs something.\nit just doesn't cost money. not yet.\nit costs time. presence.\nsometimes it costs the version of you\nthat didn't have to care this much.\ni'm not saying this to complain.\ni'm saying it so you know —\nif you're paying this price too.\nit means something is real.\nand real things are worth the cost.\ncomment "cost" and i'll dm you the honest day in my life breakdown as a 21 year old founder.`,
-    },
-    {
-        id: 'reel20', title: 'Reel 20 — Chaos Over Salary', status: 'pending',
-        script: `21 years old and i chose chaos over a salary.\nand i'd do it again immediately.\n\nthe plan was grades. placement. job. salary. done.\nand somewhere between\na hollow report card\nand a random linkedin DM\nand a laptop that died\nand a wednesday i almost quit\nand a lot of 2am sessions —\ni ended up here instead.\nbuilding something from nothing.\nwith cofounders who became everything.\ntoward a deadline that's getting closer every day.\nis it scary? yes.\nis it the most alive i've ever felt? disturbingly yes.\nwouldn't trade it.\nespecially not for the backup plan.\ncomment "chaos" and i'll dm you the exact notes i made before i committed to this full time.`,
-    },
-    {
-        id: 'reel21', title: 'Reel 21 — Building in Public is Terrifying', status: 'pending',
-        script: `building in public is terrifying.\ndoing it anyway because i have no chill.\n\nwhat if it doesn't work.\nwhat if i document the whole journey\nand the ending isn't the good kind.\nhere's what i decided though.\nthe girl who needed to see someone like her doing this —\nshe doesn't care if i succeed.\nshe cares that i tried.\nshe cares that i said\ni don't know what i'm doing\nand i'm doing it anyway.\nso this is me saying that.\nout loud. on the internet.\nto whoever needed to hear it today.\ncomment "scared" and i'll dm you my notes on building in public without oversharing.`,
-    },
-    {
-        id: 'reel22', title: 'Reel 22 — THE REVEAL 🎯', status: 'pending',
-        script: `okay plot twist nobody saw coming.\n\nremember all those dms you received from my reels?\nthe ones that felt personal?\nfelt like i typed them just for you?\n\ni didn't.\n\nthat was my product.\nrunning in the background.\nwhile i slept. while i was in class.\nwhile i was literally making these reels.\n\ni was using it on you the whole time.\nand you didn't even notice.\nbecause it worked.\n\nit's called QuickRevert.\ninstagram automation that replies to your dms and comments.\nautomatically.\n\nbuilt by a girl with anxiety and 47 tabs open.\nand now it's yours to abuse.\n\ncomment "revert" and you know what happens next.`,
-    },
-];
+const DEFAULT_REELS: Reel[] = Array.from({ length: 12 }, (_, i) => ({
+    id: `reel${i + 1}`,
+    title: `Reel ${i + 1}`,
+    status: 'pending',
+    script: 'Enter your script here'
+}));
 
-const DEFAULT_DATA: TrackerData = {
+const GET_DEFAULT_DATA = (totalDays: number, goal: number, startDate: string): TrackerData => ({
     reels: DEFAULT_REELS,
-    dailyTasks: ALL_DAILY_TASKS,
+    dailyTasks: getPlaceholderTasks(totalDays), 
     freelanceIncomes: [],
     quickRevertFeatures: DEFAULT_QR_FEATURES,
     habits: DEFAULT_HABITS,
-};
+    goalAmount: goal,
+    startDate: startDate,
+    totalDays: totalDays,
+});
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const T = {
@@ -253,20 +174,34 @@ const inp = (extra?: React.CSSProperties): React.CSSProperties => ({
 });
 
 // ─── Main Tracker ─────────────────────────────────────────────────────────────
-export default function Tracker() {
-    const today = new Date();
-    const daysElapsed = Math.max(1, Math.min(TOTAL_DAYS, Math.floor((today.getTime() - START_DATE.getTime()) / 86400000) + 1));
-    const daysRemaining = Math.max(0, TOTAL_DAYS - daysElapsed);
+export default function Tracker({ user, onLogout }: { user: { email: string; name: string }, onLogout: () => void }) {
+    const storageKey = `tracker_data_${user.email}`;
 
     const [data, setData] = useState<TrackerData>(() => {
         try {
-            const saved = localStorage.getItem('38DayTrackerV2');
+            const saved = localStorage.getItem(storageKey);
             if (saved) return JSON.parse(saved);
         } catch { }
-        return DEFAULT_DATA;
+        return GET_DEFAULT_DATA(DEFAULT_TOTAL_DAYS, DEFAULT_GOAL, DEFAULT_START_DATE);
     });
 
+    const goalAmount = data.goalAmount || DEFAULT_GOAL;
+    const totalDays = data.totalDays || DEFAULT_TOTAL_DAYS;
+    const startDate = new Date(data.startDate || DEFAULT_START_DATE);
+    const dailyTarget = Math.ceil(goalAmount / totalDays);
+
+    const today = new Date();
+    const daysElapsed = Math.max(1, Math.min(totalDays, Math.floor((today.getTime() - startDate.getTime()) / 86400000) + 1));
+    const daysRemaining = Math.max(0, totalDays - daysElapsed);
+
     const [showRevenueCalc, setShowRevenueCalc] = useState(false);
+    const [showSettings, setShowSettings] = useState(false);
+    const [settingsInput, setSettingsInput] = useState({ 
+        goal: goalAmount.toString(), 
+        days: totalDays.toString(), 
+        date: data.startDate || DEFAULT_START_DATE 
+    });
+
     const [newIncome, setNewIncome] = useState({ date: '', amount: '', description: '' });
     const [editingHabit, setEditingHabit] = useState<string | null>(null);
     const [editingQR, setEditingQR] = useState<string | null>(null);
@@ -279,8 +214,8 @@ export default function Tracker() {
     const [selectedDay, setSelectedDay] = useState(daysElapsed);
 
     useEffect(() => {
-        localStorage.setItem('38DayTrackerV2', JSON.stringify(data));
-    }, [data]);
+        localStorage.setItem(storageKey, JSON.stringify(data));
+    }, [data, storageKey]);
 
     // ── Derived ──
     const totalEarned = data.freelanceIncomes.reduce((s, i) => s + i.amount, 0);
@@ -288,21 +223,21 @@ export default function Tracker() {
     const qrTotal = data.quickRevertFeatures.length;
     const habitsCompleted = data.habits.filter(h => h.completed).length;
     const reelsPosted = data.reels.filter(r => r.status === 'posted').length;
-    const earnedPct = Math.min(100, Math.round((totalEarned / GOAL_AMOUNT) * 100));
-    const paceNeeded = daysRemaining > 0 ? Math.ceil((GOAL_AMOUNT - totalEarned) / daysRemaining) : 0;
+    const earnedPct = Math.min(100, Math.round((totalEarned / goalAmount) * 100));
+    const paceNeeded = daysRemaining > 0 ? Math.ceil((goalAmount - totalEarned) / daysRemaining) : 0;
 
     const revenueChartData = useMemo(() => (
-        Array.from({ length: TOTAL_DAYS }, (_, i) => {
-            const d = new Date(START_DATE);
-            d.setDate(START_DATE.getDate() + i);
+        Array.from({ length: totalDays }, (_, i) => {
+            const d = new Date(startDate);
+            d.setDate(startDate.getDate() + i);
             const ds = d.toISOString().split('T')[0];
             return {
                 day: i + 1,
                 earned: data.freelanceIncomes.filter(inc => inc.date <= ds).reduce((s, inc) => s + inc.amount, 0),
-                target: Math.round((i + 1) * DAILY_TARGET),
+                target: Math.round((i + 1) * dailyTarget),
             };
         })
-    ), [data.freelanceIncomes]);
+    ), [data.freelanceIncomes, totalDays, startDate, dailyTarget]);
 
     const reelsPipeline = [
         { stage: 'Pending', count: data.reels.filter(r => r.status === 'pending').length, color: '#c4c0ba' },
@@ -371,18 +306,24 @@ export default function Tracker() {
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                             <div style={{ width: 7, height: 7, borderRadius: '50%', background: T.green }} />
                             <span style={{ fontSize: 12, color: T.green, letterSpacing: 2, textTransform: 'uppercase' }}>Live</span>
-                            <span style={{ fontSize: 12, color: T.textMuted }}>· Mar 23 – Apr 30, 2026</span>
+                            <span style={{ fontSize: 12, color: T.textMuted }}>· {startDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – {new Date(startDate.getTime() + totalDays * 86400000).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                         </div>
                         <h1 style={{ fontFamily: '"DM Serif Display", Georgia, serif', fontSize: 34, margin: 0, color: T.text, lineHeight: 1.1 }}>
-                            38-Day Sprint 🚀
+                            {totalDays}-Day Sprint 🚀
                         </h1>
                         <p style={{ color: T.textMuted, fontSize: 14, margin: '6px 0 0' }}>
-                            Goal: ₹1,00,000 from freelance · Khushi's tracker
+                            Goal: ₹{goalAmount.toLocaleString('en-IN')} · {user.name}'s tracker
                         </p>
                     </div>
                     <div style={{ display: 'flex', gap: 10 }}>
+                        <button onClick={() => setShowSettings(!showSettings)} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '10px', color: T.textSub, boxShadow: T.shadow, cursor: 'pointer' }}>
+                            <Settings size={20} />
+                        </button>
+                        <button onClick={onLogout} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '10px', color: T.rose, boxShadow: T.shadow, cursor: 'pointer' }}>
+                            <LogOut size={20} />
+                        </button>
                         {[
-                            { label: `Day ${daysElapsed}`, sub: `of ${TOTAL_DAYS}`, color: T.lavender },
+                            { label: `Day ${daysElapsed}`, sub: `of ${totalDays}`, color: T.lavender },
                             { label: `${daysRemaining}`, sub: 'days left', color: T.amber },
                         ].map(s => (
                             <div key={s.label} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 14, padding: '10px 20px', textAlign: 'center', boxShadow: T.shadow }}>
@@ -393,12 +334,62 @@ export default function Tracker() {
                     </div>
                 </div>
 
+                {/* ── SETTINGS ─────────────────────────────────────────────── */}
+                {showSettings && (
+                    <Card style={{ padding: 24 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                            <SectionTitle icon="⚙️" title="Sprint Settings" />
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 16, marginBottom: 20 }}>
+                            <div>
+                                <label style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Goal Amount (₹)</label>
+                                <input type="number" value={settingsInput.goal} onChange={e => setSettingsInput(p => ({ ...p, goal: e.target.value }))} style={inp()} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Total Days</label>
+                                <input type="number" value={settingsInput.days} onChange={e => setSettingsInput(p => ({ ...p, days: e.target.value }))} style={inp()} />
+                            </div>
+                            <div>
+                                <label style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', marginBottom: 6, display: 'block' }}>Start Date</label>
+                                <input type="date" value={settingsInput.date} onChange={e => setSettingsInput(p => ({ ...p, date: e.target.value }))} style={inp()} />
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 10 }}>
+                            <button 
+                                onClick={() => {
+                                    const g = parseInt(settingsInput.goal);
+                                    const d = parseInt(settingsInput.days);
+                                    if (isNaN(g) || isNaN(d)) return;
+
+                                    setData(prev => ({
+                                        ...prev,
+                                        goalAmount: g,
+                                        totalDays: d,
+                                        startDate: settingsInput.date,
+                                        // If days increased, we might want to add placeholder tasks
+                                        dailyTasks: prev.totalDays < d 
+                                            ? [...prev.dailyTasks, ...getPlaceholderTasks(d).filter(t => t.day > prev.totalDays)]
+                                            : prev.dailyTasks.filter(t => t.day <= d)
+                                    }));
+                                    setShowSettings(false);
+                                }} 
+                                style={{ background: T.green, color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontSize: 14, fontWeight: 600 }}
+                            >
+                                Save Settings
+                            </button>
+                            <button onClick={() => setShowSettings(false)} style={{ background: T.bg, color: T.textSub, border: `1px solid ${T.border}`, borderRadius: 8, padding: '10px 20px', cursor: 'pointer', fontSize: 14 }}>
+                                Cancel
+                            </button>
+                        </div>
+                    </Card>
+                )}
+
                 {/* ── GOAL HERO ─────────────────────────────────────────────── */}
                 <Card>
                     <div style={{ padding: '28px 32px' }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 32 }}>
                             {/* Big ring */}
-                            <Ring value={totalEarned} max={GOAL_AMOUNT} size={160} stroke={13} color={T.green} trackColor={T.greenTrack}>
+                            <Ring value={totalEarned} max={goalAmount} size={160} stroke={13} color={T.green} trackColor={T.greenTrack}>
                                 <div style={{ fontSize: 26, fontWeight: 700, color: T.green, lineHeight: 1 }}>{earnedPct}%</div>
                                 <div style={{ fontSize: 11, color: T.textMuted }}>of goal</div>
                             </Ring>
@@ -409,21 +400,21 @@ export default function Tracker() {
                                 <div style={{ fontSize: 42, fontWeight: 700, color: T.green, lineHeight: 1.1, marginTop: 4 }}>
                                     ₹{totalEarned.toLocaleString('en-IN')}
                                 </div>
-                                <div style={{ fontSize: 15, color: T.textMuted, marginTop: 4 }}>/ ₹1,00,000 goal</div>
+                                <div style={{ fontSize: 15, color: T.textMuted, marginTop: 4 }}>/ ₹{goalAmount.toLocaleString('en-IN')} goal</div>
                                 <div style={{ margin: '16px 0 6px', height: 8, background: T.greenTrack, borderRadius: 99, overflow: 'hidden' }}>
                                     <div style={{ height: '100%', width: `${earnedPct}%`, background: `linear-gradient(90deg,${T.green},#7ac49a)`, borderRadius: 99, transition: 'width 0.6s' }} />
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: T.textMuted }}>
-                                    <span>₹0</span><span>₹1,00,000</span>
+                                    <span>₹0</span><span>₹{goalAmount.toLocaleString('en-IN')}</span>
                                 </div>
                             </div>
 
                             {/* Side stats */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                                 {[
-                                    { label: 'Remaining', val: `₹${(GOAL_AMOUNT - totalEarned).toLocaleString('en-IN')}`, color: T.amber },
+                                    { label: 'Remaining', val: `₹${(goalAmount - totalEarned).toLocaleString('en-IN')}`, color: T.amber },
                                     { label: 'Pace Needed / Day', val: `₹${paceNeeded.toLocaleString('en-IN')}`, color: T.rose },
-                                    { label: 'Original Target / Day', val: `₹${DAILY_TARGET.toLocaleString('en-IN')}`, color: T.textMuted },
+                                    { label: 'Original Target / Day', val: `₹${dailyTarget.toLocaleString('en-IN')}`, color: T.textMuted },
                                 ].map(s => (
                                     <div key={s.label}>
                                         <div style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>{s.label}</div>
@@ -434,17 +425,17 @@ export default function Tracker() {
 
                             <div style={{ flex: '0 0 100%' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: T.textMuted, marginBottom: 6 }}>
-                                    <span>Mar 23</span>
-                                    <span style={{ color: T.lavender, fontWeight: 600 }}>Day {selectedDay} of {TOTAL_DAYS}</span>
-                                    <span>Apr 30</span>
+                                    <span>{startDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
+                                    <span style={{ color: T.lavender, fontWeight: 600 }}>Day {selectedDay} of {totalDays}</span>
+                                    <span>{new Date(startDate.getTime() + totalDays * 86400000).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })}</span>
                                 </div>
                                 <div style={{ position: 'relative', height: 24, display: 'flex', alignItems: 'center' }}>
                                     <div style={{ position: 'absolute', height: 10, width: '100%', background: T.lavenderTrack, borderRadius: 99 }} />
-                                    <div style={{ position: 'absolute', height: 10, width: `${(selectedDay / TOTAL_DAYS) * 100}%`, background: `linear-gradient(90deg,${T.lavender},#b0a4e0)`, borderRadius: 99, transition: 'width 0.3s' }} />
+                                    <div style={{ position: 'absolute', height: 10, width: `${(selectedDay / totalDays) * 100}%`, background: `linear-gradient(90deg,${T.lavender},#b0a4e0)`, borderRadius: 99, transition: 'width 0.3s' }} />
                                     <input 
                                         type="range" 
                                         min="1" 
-                                        max={TOTAL_DAYS} 
+                                        max={totalDays} 
                                         value={selectedDay} 
                                         onChange={(e) => setSelectedDay(parseInt(e.target.value))}
                                         style={{ 
@@ -459,7 +450,7 @@ export default function Tracker() {
                                     <div style={{ 
                                         position: 'absolute', 
                                         top: '50%', 
-                                        left: `${(selectedDay / TOTAL_DAYS) * 100}%`, 
+                                        left: `${(selectedDay / totalDays) * 100}%`, 
                                         transform: 'translate(-50%,-50%)', 
                                         width: 18, 
                                         height: 18, 
@@ -484,9 +475,9 @@ export default function Tracker() {
                                 <div>
                                     <div style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>💰 Revenue</div>
                                     <div style={{ fontSize: 28, fontWeight: 700, color: T.green, lineHeight: 1.1, marginTop: 4 }}>₹{totalEarned.toLocaleString('en-IN')}</div>
-                                    <div style={{ fontSize: 12, color: T.textMuted }}>/ ₹1,00,000</div>
+                                    <div style={{ fontSize: 12, color: T.textMuted }}>/ ₹{goalAmount.toLocaleString('en-IN')}</div>
                                 </div>
-                                <Ring value={totalEarned} max={GOAL_AMOUNT} size={68} stroke={7} color={T.green} trackColor={T.greenTrack}>
+                                <Ring value={totalEarned} max={goalAmount} size={68} stroke={7} color={T.green} trackColor={T.greenTrack}>
                                     <span style={{ fontSize: 11, fontWeight: 700, color: T.green }}>{earnedPct}%</span>
                                 </Ring>
                             </div>
@@ -502,7 +493,7 @@ export default function Tracker() {
                         <div style={{ padding: '20px 22px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                                 <div>
-                                    <div style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>⚡ QuickRevert Features</div>
+                                    <div style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1 }}>⚡ Project Features</div>
                                     <div style={{ fontSize: 28, fontWeight: 700, color: T.amber, lineHeight: 1.1, marginTop: 4 }}>
                                         {qrDone}<span style={{ fontSize: 16, color: T.textMuted }}>/{qrTotal}</span>
                                     </div>
@@ -638,16 +629,16 @@ export default function Tracker() {
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-                                {[
-                                    { label: 'Total Earned', val: `₹${totalEarned.toLocaleString('en-IN')}`, color: T.green, bg: T.greenBg },
-                                    { label: 'Remaining', val: `₹${(GOAL_AMOUNT - totalEarned).toLocaleString('en-IN')}`, color: T.amber, bg: T.amberBg },
-                                    { label: 'Needed / Day', val: `₹${paceNeeded.toLocaleString('en-IN')}`, color: T.rose, bg: T.roseBg },
-                                ].map(s => (
-                                    <div key={s.label} style={{ background: s.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 16px' }}>
-                                        <div style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{s.label}</div>
-                                        <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.val}</div>
-                                    </div>
-                                ))}
+                                    { [
+                                        { label: 'Total Earned', val: `₹${totalEarned.toLocaleString('en-IN')}`, color: T.green, bg: T.greenBg },
+                                        { label: 'Remaining', val: `₹${(goalAmount - totalEarned).toLocaleString('en-IN')}`, color: T.amber, bg: T.amberBg },
+                                        { label: 'Needed / Day', val: `₹${paceNeeded.toLocaleString('en-IN')}`, color: T.rose, bg: T.roseBg },
+                                    ].map(s => (
+                                        <div key={s.label} style={{ background: s.bg, border: `1px solid ${T.border}`, borderRadius: 12, padding: '14px 16px' }}>
+                                            <div style={{ fontSize: 11, color: T.textMuted, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{s.label}</div>
+                                            <div style={{ fontSize: 20, fontWeight: 700, color: s.color }}>{s.val}</div>
+                                        </div>
+                                    ))}
                             </div>
                         </div>
                     </Card>
@@ -659,7 +650,7 @@ export default function Tracker() {
                         <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                             <SectionTitle icon="📅" title="Daily Work" />
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6, overflowX: 'auto', paddingBottom: 4, maxWidth: '100%' }}>
-                                {Array.from({ length: TOTAL_DAYS }, (_, i) => i + 1).map(d => (
+                                {Array.from({ length: totalDays }, (_, i) => i + 1).map(d => (
                                     <button
                                         key={d}
                                         onClick={() => setSelectedDay(d)}
@@ -734,7 +725,7 @@ export default function Tracker() {
                     <Card>
                         <div style={{ padding: '24px 26px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 8 }}>
-                                <SectionTitle icon="⚡" title="QuickRevert Features" badge={`${qrDone}/${qrTotal}`} />
+                                <SectionTitle icon="⚡" title="Project Features" badge={`${qrDone}/${qrTotal}`} />
                                 <button onClick={() => setShowAddQR(s => !s)} style={{ display: 'flex', alignItems: 'center', gap: 5, background: T.amberBg, border: `1px solid ${T.amberTrack}`, borderRadius: 8, color: T.amber, padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
                                     <Plus size={13} /> Add
                                 </button>
@@ -909,7 +900,7 @@ export default function Tracker() {
 
                 {/* Footer */}
                 <div style={{ textAlign: 'center', color: T.textFaint, fontSize: 12, paddingBottom: 16 }}>
-                    Saved to localStorage · 38-Day Sprint · Mar 23 – Apr 30, 2026 ✨
+                    Saved to localStorage · {totalDays}-Day Sprint · {startDate.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })} – {new Date(startDate.getTime() + totalDays * 86400000).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })} ✨
                 </div>
             </div>
         </div>
