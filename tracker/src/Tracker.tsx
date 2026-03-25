@@ -151,7 +151,7 @@ function Card({ children, style = {} }: { children: React.ReactNode; style?: Rea
 }
 
 // ─── Section Label ─────────────────────────────────────────────────────────────
-function SectionTitle({ icon, title, badge, color = T.text }: { icon: string; title: string; badge?: string; color?: string }) {
+function SectionTitle({ icon, title, badge }: { icon: string; title: string; badge?: string }) {
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 20 }}>{icon}</span>
